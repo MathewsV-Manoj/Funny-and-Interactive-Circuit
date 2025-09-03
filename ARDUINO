@@ -1,0 +1,94 @@
+`#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// I2C LCD address (0x27 is standard)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Ultrasonic sensor pins
+const int trigPin = 7;
+const int echoPin = 6;
+
+// Updated output pins
+const int redLED = 10;     // RED on pin 10
+const int greenLED = 11;   // GREEN on pin 11
+const int buzzer = 8;      // Buzzer on pin 8
+
+void setup() {
+  Serial.begin(9600);
+
+  // LCD setup
+  lcd.begin(16, 2);
+  lcd.backlight();
+
+  // Pin modes
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(redLED, OUTPUT);
+  pinMode(greenLED, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+
+  // Welcome screen
+  lcd.setCursor(0, 0);
+  lcd.print("Funny Mood Scan");
+  lcd.setCursor(0, 1);
+  lcd.print("Ready to judge!");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+  long duration;
+  int distance;
+
+  // Send ultrasonic pulse
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Read echo
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2;
+
+  // Debug print
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // LCD display
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Distance: ");
+  lcd.print(distance);
+  lcd.print(" cm");
+
+  lcd.setCursor(0, 1);
+
+  if (distance < 20) {
+    // TOO CLOSE condition
+    lcd.print("TOO CLOSE! Back up!");
+    digitalWrite(greenLED, LOW);
+
+    // Blink red LED 3 times
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(redLED, HIGH);
+      delay(100);
+      digitalWrite(redLED, LOW);
+      delay(100);
+    }
+
+    // Simple beep sound
+    tone(buzzer, 1000);   // 1kHz tone
+    delay(300);
+    noTone(buzzer);
+  } else {
+    // Safe distance
+    lcd.print("All good! 🙂");
+    digitalWrite(redLED, LOW);
+    digitalWrite(greenLED, HIGH);
+    noTone(buzzer);
+  }
+
+  delay(1000);
+}
